@@ -55,4 +55,23 @@ export class PricesService {
             throw new NotFoundException(`Price with id ${id} not found`);
         }
     }
+
+
+    async findByCatIdAndSubCatId(
+        category_id: number,
+        subcategory_id: number,
+    ): Promise<Price> {
+        const price = await this.priceRepo.findOneBy({
+            category_id,
+            subcategory_id,
+        });
+
+        if (!price) {
+            throw new NotFoundException(
+                `Price with category_id=${category_id} and subcategory_id=${subcategory_id} not found`,
+            );
+        }
+        return price;
+    }
+
 }

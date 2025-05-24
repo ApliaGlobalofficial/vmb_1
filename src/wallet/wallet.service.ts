@@ -172,10 +172,10 @@ export class WalletService {
         const newAdminAmount = Number(adminWallet.balance) + amount;
         adminWallet.balance = newAdminAmount;
 
-        console.log(`adminWallet: ${JSON.stringify(adminWallet)}`,`amount: ${amount}`);
-    
-        
-        
+        console.log(`adminWallet: ${JSON.stringify(adminWallet)}`, `amount: ${amount}`);
+
+
+
         const adminResult = await this.walletRepo.save(adminWallet);
         console.log(`adminResult: from update walet debit ${JSON.stringify(adminResult)}`);
 
@@ -202,5 +202,39 @@ export class WalletService {
             merchantOrderId,
             callbackUrl: `${getEnvVar('FRONTEND_URL')}/wallet`,
         };
+    }
+
+    async findWalletByUserId(userId: number): Promise<Wallet> {
+        const wallet = await this.walletRepo.findOne({ where: { userId } });
+        if (!wallet) {
+            throw new NotFoundException(`Wallet with userId ${userId} not found`);
+        }
+        return wallet;
+    }
+
+    async addWalletBalance(userId: number, amount: number): Promise<Wallet> {
+        let wallet = await this.findWalletByUserId(userId);
+        if (!wallet) {
+            wallet = this.walletRepo.create({ userId, balance: 0, totalBalance: 0 });
+            await this.walletRepo.save(wallet);
+        }
+
+
+        wallet.balance = Number(wallet.balance)+Number(amount);
+        return this.walletRepo.save(wallet);
+
+    }
+    async subtractWalletBalance(userId: number, amount: number): Promise<Wallet> {
+        const wallet = await this.findWalletByUserId(userId);
+        if (!wallet) {
+            throw new NotFoundException(`Wallet with userId ${userId} not found`);
+        }
+        if (wallet.balance < amount) {
+            throw new Error('Insufficient balance');
+        }
+
+        wallet.balance -= amount;
+        return this.walletRepo.save(wallet);
+
     }
 }

@@ -38,6 +38,7 @@ import { RazorpayModule } from './razorpay/razorpay.module';
 import { SmsModule } from './sms/sms.module';
 import { HeaderModule } from './header/header.module';
 import { ContactInfoModule } from './contact-info/contact-info.module';
+import { WalletRequestModule } from './wallet_request/wallet_request.module';
 
 config();
 
@@ -100,10 +101,9 @@ config();
     HeaderModule,
     ContactInfoModule,
     NewsModule
-
-
-    ,
-    PrivacyPolicyModule],
+,
+    PrivacyPolicyModule,
+    WalletRequestModule],
   controllers: [AppController],
   providers: [AppService],
 })

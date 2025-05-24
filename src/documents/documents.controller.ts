@@ -150,7 +150,9 @@ export class DocumentsController {
     try {
       // Log the start of the process
       console.log('🔍 Starting status update for document ID:', documentId);
-
+      const document = await this.documentsService.getDocumentById(documentId);
+      console.log('📄 Document Details:', document);
+      
       // Validate required fields
       if (!status) {
         throw new BadRequestException('Status is required.');

@@ -1,11 +1,13 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, Param, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Document } from './entities/documents.entity';
 import { Express } from 'express';
 import { S3Service } from './s3.service';
 import * as nodemailer from 'nodemailer';
 import { IsNull, Not } from "typeorm";
+import { PricesService } from "../prices/prices.service";
+import { WalletService } from '../wallet/wallet.service';
 
 
 @Injectable()
@@ -13,8 +15,10 @@ export class DocumentsService {
   constructor(
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
-
-    private readonly s3Service: S3Service
+    private readonly pricesService: PricesService,
+    private readonly walletService: WalletService,
+    private readonly s3Service: S3Service,
+    private readonly dataSource: DataSource,
   ) { }
 
   async getAllDocuments() {
@@ -29,7 +33,7 @@ export class DocumentsService {
   async getDocumentById(documentId: number) {
     return this.documentRepository.findOne({
       where: { document_id: documentId },
-      select: ['document_id', 'status_history'], // Only fetch necessary fields
+      select: ['document_id', 'status_history', 'category_id', 'subcategory_id'], // Only fetch necessary fields
     });
   }
   async getReceiptByApplicationId(
@@ -82,6 +86,7 @@ export class DocumentsService {
     }
   }
 
+
   async getAssignedDocuments() {
     try {
       const assignedDocuments = await this.documentRepository.find({
@@ -98,113 +103,138 @@ export class DocumentsService {
       throw new InternalServerErrorException('Could not fetch assigned documents');
     }
   }
-  async updateDocumentStatus(
-    documentId: number,
-    status: string,
-    rejectionReason?: string,
-    selectedDocumentNames?: string[],
-  ) {
-    try {
-      console.log('🔍 Finding document with ID:', documentId);
+  // async updateDocumentStatus(
+  //   documentId: number,
+  //   status: string,
+  //   rejectionReason?: string,
+  //   selectedDocumentNames?: string[],
+  // ) {
+  //   try {
+  //     console.log('🔍 Finding document with ID:', documentId);
+  //     // Find the document in the database
+  //     const document = await this.documentRepository.findOne({
+  //       where: { document_id: documentId },
+  //     });
+  //     if (!document) {
+  //       throw new BadRequestException('Document not found.');
+  //     }
+  //     console.log('📄 Document before update:', JSON.stringify(document, null, 2));
+  //     if (document.status === 'Completed') {
+  //       const docId = await this.pricesService.findByCatIdAndSubCatId(document.category_id, document.subcategory_id);
+  //       if (!docId) {
+  //         throw new BadRequestException('Document ID not found.');
+  //       }
+  //       console.log('📄 Document before update: doc id ', JSON.stringify(docId));
+  //       const adminWallet = await this.walletService.findWalletByUserId(5);
+  //       if (!adminWallet) {
+  //         throw new Error('Admin wallet not found');
+  //       }
+  //       console.log(`adminWallet: ${JSON.stringify(adminWallet)}`);
 
-      // Find the document in the database
-      const document = await this.documentRepository.findOne({
-        where: { document_id: documentId },
-      });
+  //       const adminSubAmount = await this.walletService.subtractWalletBalance(5, Number(docId.distributable_amount));
+  //       if (!adminSubAmount) {
+  //         throw new Error('Admin wallet balance not updated');
+  //       }
+  //       const distributorWallet = await this.walletService.findWalletByUserId(Number(document.distributor_id));
+  //       console.log(`distributorWallet: ${JSON.stringify(distributorWallet)}`);
 
-      if (!document) {
-        throw new BadRequestException('Document not found.');
-      }
+  //       if (!distributorWallet) {
+  //         throw new Error('Distributor wallet not found');
+  //       }
+  //       const destributorAmount = await this.walletService.addWalletBalance(Number(distributorWallet.userId), Number(docId.distributable_amount));
+  //       console.log(`destributerrrr: ${JSON.stringify(destributorAmount)}`);
 
-      console.log('📄 Document before update:', JSON.stringify(document, null, 2));
+  //       if (!destributorAmount) {
+  //         throw new Error('Distributor wallet balance not updated');
+  //       }
+  //     }
+  //     // Update the document status
+  //     document.status = status;
 
-      // Update the document status
-      document.status = status;
+  //     // Add a new entry to the status_history array
+  //     document.status_history = document.status_history || []; // Initialize if null
+  //     document.status_history.push({
+  //       status: status, // Current status
+  //       updated_at: new Date(), // Current timestamp
+  //     });
+  //     console.log('✅ Updated status_history:', document.status_history);
 
-      // Add a new entry to the status_history array
-      document.status_history = document.status_history || []; // Initialize if null
-      document.status_history.push({
-        status: status, // Current status
-        updated_at: new Date(), // Current timestamp
-      });
-      console.log('✅ Updated status_history:', document.status_history);
+  //     // Handle rejection reason, selected document names, and other status-specific logic
+  //     if (status === 'Rejected') {
+  //       // Validate rejection reason (required for "Rejected" status)
+  //       if (!rejectionReason?.trim()) {
+  //         throw new BadRequestException('Rejection reason is required for Rejected status.');
+  //       }
 
-      // Handle rejection reason, selected document names, and other status-specific logic
-      if (status === 'Rejected') {
-        // Validate rejection reason (required for "Rejected" status)
-        if (!rejectionReason?.trim()) {
-          throw new BadRequestException('Rejection reason is required for Rejected status.');
-        }
+  //       // Save rejection reason
+  //       document.rejection_reason = rejectionReason;
+  //       console.log('✅ Saved rejection reason:', rejectionReason);
 
-        // Save rejection reason
-        document.rejection_reason = rejectionReason;
-        console.log('✅ Saved rejection reason:', rejectionReason);
+  //       // Save selected document names if provided
+  //       if (selectedDocumentNames) {
+  //         document.selected_document_names = selectedDocumentNames;
+  //         console.log('✅ Saved selected document names:', selectedDocumentNames.join(', '));
+  //       }
+  //     } else if (status === 'Uploaded') {
+  //       // Save selected document names if provided
+  //       if (selectedDocumentNames) {
+  //         document.selected_document_names = selectedDocumentNames;
+  //         console.log('✅ Saved selected document names:', selectedDocumentNames.join(', '));
+  //       }
+  //     } else if (status === 'Sent') {
+  //       // Handle logic for "Sent" status
+  //       console.log('✅ Document status updated to "Sent".');
+  //       // You can add additional logic here if needed, such as sending an email notification.
+  //     } else if (status === 'Received') {
+  //       // Handle logic for "Received" status
+  //       console.log('✅ Document status updated to "Received".');
+  //       // You can add additional logic here if needed, such as sending an email notification.
+  //     } else {
+  //       // For all other statuses, preserve the existing values
+  //       console.log('⚠️ Status is neither "Rejected", "Uploaded", "Sent", nor "Received". Preserving existing values.');
+  //     }
 
-        // Save selected document names if provided
-        if (selectedDocumentNames) {
-          document.selected_document_names = selectedDocumentNames;
-          console.log('✅ Saved selected document names:', selectedDocumentNames.join(', '));
-        }
-      } else if (status === 'Uploaded') {
-        // Save selected document names if provided
-        if (selectedDocumentNames) {
-          document.selected_document_names = selectedDocumentNames;
-          console.log('✅ Saved selected document names:', selectedDocumentNames.join(', '));
-        }
-      } else if (status === 'Sent') {
-        // Handle logic for "Sent" status
-        console.log('✅ Document status updated to "Sent".');
-        // You can add additional logic here if needed, such as sending an email notification.
-      } else if (status === 'Received') {
-        // Handle logic for "Received" status
-        console.log('✅ Document status updated to "Received".');
-        // You can add additional logic here if needed, such as sending an email notification.
-      } else {
-        // For all other statuses, preserve the existing values
-        console.log('⚠️ Status is neither "Rejected", "Uploaded", "Sent", nor "Received". Preserving existing values.');
-      }
+  //     // Log the document after update
+  //     console.log('📄 Document after update:', JSON.stringify(document, null, 2));
 
-      // Log the document after update
-      console.log('📄 Document after update:', JSON.stringify(document, null, 2));
+  //     // Save the updated document
+  //     const updatedDocument = await this.documentRepository.save(document);
+  //     console.log('✅ Document status updated successfully for document ID:', documentId);
 
-      // Save the updated document
-      const updatedDocument = await this.documentRepository.save(document);
-      console.log('✅ Document status updated successfully for document ID:', documentId);
+  //     // Send email based on the updated status
+  //     if (status === 'Rejected') {
+  //       const reason = rejectionReason || 'No reason provided'; // Provide a default value
+  //       await this.sendStatusRejectedEmail(updatedDocument, reason);
+  //       console.log('📧 Rejection email sent for document ID:', documentId);
+  //     } else if (status === 'Uploaded') {
+  //       await this.sendStatusUploadedEmail(updatedDocument);
+  //       console.log('📧 Upload confirmation email sent for document ID:', documentId);
+  //     } else if (status === 'Sent') {
+  //       // Send email notification for "Sent" status if required
+  //       console.log('📧 Sent confirmation email sent for document ID:', documentId);
+  //     } else if (status === 'Received') {
+  //       // Send email notification for "Received" status if required
+  //       console.log('📧 Received confirmation email sent for document ID:', documentId);
+  //     }
 
-      // Send email based on the updated status
-      if (status === 'Rejected') {
-        const reason = rejectionReason || 'No reason provided'; // Provide a default value
-        await this.sendStatusRejectedEmail(updatedDocument, reason);
-        console.log('📧 Rejection email sent for document ID:', documentId);
-      } else if (status === 'Uploaded') {
-        await this.sendStatusUploadedEmail(updatedDocument);
-        console.log('📧 Upload confirmation email sent for document ID:', documentId);
-      } else if (status === 'Sent') {
-        // Send email notification for "Sent" status if required
-        console.log('📧 Sent confirmation email sent for document ID:', documentId);
-      } else if (status === 'Received') {
-        // Send email notification for "Received" status if required
-        console.log('📧 Received confirmation email sent for document ID:', documentId);
-      }
+  //     // Return success response
+  //     return {
+  //       message: 'Status updated successfully',
+  //       document: updatedDocument,
+  //     };
+  //   } catch (error) {
+  //     // Log the error
+  //     console.error('❌ Error updating status:', error.stack);
 
-      // Return success response
-      return {
-        message: 'Status updated successfully',
-        document: updatedDocument,
-      };
-    } catch (error) {
-      // Log the error
-      console.error('❌ Error updating status:', error.stack);
+  //     // Handle specific errors
+  //     if (error instanceof BadRequestException) {
+  //       throw error; // Re-throw BadRequestException as is
+  //     }
 
-      // Handle specific errors
-      if (error instanceof BadRequestException) {
-        throw error; // Re-throw BadRequestException as is
-      }
-
-      // Throw a generic error for other cases
-      throw new InternalServerErrorException('Could not update document status');
-    }
-  }
+  //     // Throw a generic error for other cases
+  //     throw new InternalServerErrorException('Could not update document status');
+  //   }
+  // }
 
   // async updateDocumentStatus(
   //   documentId: number,
@@ -292,8 +322,110 @@ export class DocumentsService {
 
   // In your DocumentsService:
 
+  async updateDocumentStatus(
+    documentId: number,
+    status: string,
+    rejectionReason?: string,
+    selectedDocumentNames?: string[],
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1) Load the document within the transaction
+      const document = await queryRunner.manager.findOne(Document, { where: { document_id: documentId } });
+      if (!document) {
+        throw new BadRequestException('Document not found.');
+      }
+
+      // 2) Append to status history
+      document.status_history = document.status_history || [];
+      document.status_history.push({ status, updated_at: new Date() });
+
+      // 3) Handle rejection
+      if (status === 'Rejected') {
+        if (!rejectionReason?.trim()) {
+          throw new BadRequestException('Rejection reason is required for Rejected status.');
+        }
+        document.rejection_reason = rejectionReason;
+        if (selectedDocumentNames) {
+          document.selected_document_names = selectedDocumentNames;
+        }
+      }
+
+      // 4) Handle uploaded
+      if (status === 'Uploaded' && selectedDocumentNames) {
+        document.selected_document_names = selectedDocumentNames;
+      }
+
+      // 5) On “Completed”, do wallet transfers
+      if (status === 'Completed') {
+        const priceInfo = await this.pricesService.findByCatIdAndSubCatId(
+          document.category_id,
+          document.subcategory_id,
+        );
+        if (!priceInfo) {
+          throw new BadRequestException('Distributable amount not found.');
+        }
+        const amount = Number(priceInfo.distributable_amount);
+        if (isNaN(amount) || amount <= 0) {
+          throw new BadRequestException('Invalid distributable amount.');
+        }
+
+        const ADMIN_USER_ID = 5;
+        // subtract from admin
+        const adminDebited = await this.walletService.subtractWalletBalance(
+          ADMIN_USER_ID,
+          amount,          // ← only two args
+        );
+        if (!adminDebited) {
+          throw new InternalServerErrorException('Failed to debit admin wallet.');
+        }
+
+        // add to distributor
+        const distributorId = Number(document.distributor_id);
+        const distCredited = await this.walletService.addWalletBalance(
+          distributorId,
+          amount,         // ← only two args
+        );
+        if (!distCredited) {
+          throw new InternalServerErrorException('Failed to credit distributor wallet.');
+        }
+      }
+
+      // 6) Final document updates
+      document.status = status;
+      document.status_updated_at = new Date();
+
+      // 7) Persist
+      const saved = await queryRunner.manager.save(Document, document);
+      await queryRunner.commitTransaction();
+
+      // 8) Post‐transaction emails
+      if (status === 'Rejected') {
+        await this.sendStatusRejectedEmail(saved, document.rejection_reason!);
+      } else if (status === 'Uploaded') {
+        await this.sendStatusUploadedEmail(saved);
+      }
+      // … handle Sent/Received as before …
+
+      return {
+        message: 'Status updated successfully',
+        document: saved,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      if (err instanceof BadRequestException || err instanceof InternalServerErrorException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Could not update document status');
+    } finally {
+      await queryRunner.release();
+    }
+  }
   async reuploadDocument(
-    documentId: number, documentType: string, file: Express.Multer.File, 
+    documentId: number, documentType: string, file: Express.Multer.File,
   ): Promise<Document> {
     // 1. Fetch
     const document = await this.documentRepository.findOne({
