@@ -12,8 +12,14 @@ export class WalletRequestService {
     private readonly repo: Repository<WalletRequest>,
   ) {}
 
-  create(dto: CreateWalletRequestDto) {
-    const entity = this.repo.create(dto);
+  create(dto: CreateWalletRequestDto, userId: number) {
+     const walletDto = { 
+    ...dto, 
+    user_id: userId
+  };
+  console.log({walletDto});
+  
+    const entity = this.repo.create(walletDto);
     return this.repo.save(entity);
   }
 
