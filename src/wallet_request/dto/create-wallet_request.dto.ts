@@ -24,7 +24,7 @@ export class CreateWalletRequestDto {
 
   @IsOptional()
   @IsDecimal()
-  requested_amount?: number;
+  requested_amount: number;
 
   @IsOptional()
   @IsDateString()

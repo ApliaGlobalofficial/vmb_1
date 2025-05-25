@@ -8,6 +8,8 @@ import * as nodemailer from 'nodemailer';
 import { IsNull, Not } from "typeorm";
 import { PricesService } from "../prices/prices.service";
 import { WalletService } from '../wallet/wallet.service';
+// import { WalletTransaction } from '../wallet/entities/transaction.entity';
+
 
 
 @Injectable()
@@ -19,6 +21,8 @@ export class DocumentsService {
     private readonly walletService: WalletService,
     private readonly s3Service: S3Service,
     private readonly dataSource: DataSource,
+    // @InjectRepository(WalletTransaction)
+    // private readonly txRepo: Repository<WalletTransaction>,
   ) { }
 
   async getAllDocuments() {
@@ -392,6 +396,23 @@ export class DocumentsService {
         if (!distCredited) {
           throw new InternalServerErrorException('Failed to credit distributor wallet.');
         }
+        // // Create wallet transactions
+        // const adminTransaction = this.txRepo.create({
+        //   wallet: await this.walletService.findWalletByUserId(ADMIN_USER_ID),
+        //   merchantOrderId: document.application_id,
+        //   type: 'DEBIT',
+        //   amount,
+        //   status: 'COMPLETED',
+        // });
+
+        // const distributorTransaction = this.txRepo.create({
+        //   wallet: await this.walletService.findWalletByUserId(distributorId),
+        //   merchantOrderId: document.application_id,
+        //   type: 'CREDIT',
+        //   amount,
+        //   status: 'COMPLETED',
+        // });
+
       }
 
       // 6) Final document updates
@@ -781,25 +802,33 @@ Aaradhya Cyber`,
   }
 
   private async generateApplicationId(subcategoryName: string): Promise<string> {
-    const prefix = this.getSubcategoryPrefix(subcategoryName);  // Ex: INCOMECERT3Y
+  const prefix = this.getSubcategoryPrefix(subcategoryName);  // e.g. INCOMECERT3Y
+  const prefixLength = prefix.length;
 
-    const latestDocument = await this.documentRepository
-      .createQueryBuilder('document')
-      .where('document.application_id LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('document.application_id', 'DESC')
-      .getOne();
+  // grab the row with the max numeric part
+  const latest = await this.documentRepository
+    .createQueryBuilder('d')
+    .where('d.application_id LIKE :p', { p: `${prefix}%` })
+    .orderBy(
+      // extract the substring after the prefix, cast it to unsigned int
+      `CAST(SUBSTRING(d.application_id, ${prefixLength + 1}) AS UNSIGNED)`,
+      'DESC'
+    )
+    .getOne();
 
-    let nextNumber = 1;
+  const lastNum = latest?.application_id
+    .slice(prefixLength)       // just the digits
+    .match(/\d+$/)?.[0]        // safety
+    ? parseInt(latest.application_id.slice(prefixLength), 10)
+    : 0;
 
-    if (latestDocument?.application_id) {
-      const match = latestDocument.application_id.match(/\d+$/);
-      if (match) {
-        nextNumber = parseInt(match[0], 10) + 1;
-      }
-    }
+  const nextNumber = lastNum + 1;
+  // pad to at least two places (you can bump to 3, 4, whatever you like)
+  const suffix = nextNumber.toString().padStart(2, '0');
 
-    return `${prefix}${nextNumber.toString().padStart(2, '0')}`;
-  }
+  return `${prefix}${suffix}`;
+}
+
 
   async uploadDocuments(files: Express.Multer.File[], body: any) {
     try {
