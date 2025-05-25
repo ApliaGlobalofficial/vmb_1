@@ -4,20 +4,25 @@ import {
   Get,
   Put,
   Param,
+  Req,
   Body,
   UseInterceptors,
   UploadedFiles,
   ParseIntPipe,
   UploadedFile,
   NotFoundException,
+  UseGuards,
   Query,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../jwt-auth/jwt-auth.guard';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Document } from './entities/documents.entity';
 
 @Controller('documents')
+@UseGuards(JwtAuthGuard)
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) { }
 
@@ -141,7 +146,7 @@ export class DocumentsController {
 
 
   @Put('update-status/:id')
-  async updateDocumentStatus(
+  async updateDocumentStatus(@Req() req: Request,
     @Param('id') documentId: number,
     @Body('status') status: string,
     @Body('rejectionReason') rejectionReason?: string,
@@ -149,10 +154,10 @@ export class DocumentsController {
   ) {
     try {
       // Log the start of the process
-      console.log('🔍 Starting status update for document ID:', documentId);
+      console.log('🔍request user is ID:', req.user);
       const document = await this.documentsService.getDocumentById(documentId);
       console.log('📄 Document Details:', document);
-      
+
       // Validate required fields
       if (!status) {
         throw new BadRequestException('Status is required.');
@@ -163,8 +168,12 @@ export class DocumentsController {
         documentId,
         status,
         rejectionReason,
-        selectedDocumentNames,
+        selectedDocumentNames, 
       });
+
+      const user = (req.user as any).userId;
+      console.log('👤 User Info:', user);
+      const userRole = (req.user as any).role;
 
       // Call the service method to update the document status
       const result = await this.documentsService.updateDocumentStatus(
@@ -172,6 +181,7 @@ export class DocumentsController {
         status,
         rejectionReason,
         selectedDocumentNames,
+        userRole
       );
 
       // Log the successful update
@@ -191,21 +201,21 @@ export class DocumentsController {
       throw new InternalServerErrorException('Failed to update document status');
     }
   }
-@Post('reupload/:documentId')
-@UseInterceptors(FileInterceptor('file'))
-async reuploadDocument(
-  @Param('documentId') documentId: number,           // ← grab it as a string
-  @Body('documentType') documentType: string,
-  @UploadedFile() file: Express.Multer.File,
-) {
-  // Convert to boolean (only “true” → true)
+  @Post('reupload/:documentId')
+  @UseInterceptors(FileInterceptor('file'))
+  async reuploadDocument(
+    @Param('documentId') documentId: number,           // ← grab it as a string
+    @Body('documentType') documentType: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    // Convert to boolean (only “true” → true)
 
-  return this.documentsService.reuploadDocument(
-    documentId,
-    documentType,
-    file,
-  );
-}
+    return this.documentsService.reuploadDocument(
+      documentId,
+      documentType,
+      file,
+    );
+  }
 
 
 

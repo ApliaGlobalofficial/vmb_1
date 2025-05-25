@@ -31,7 +31,8 @@ export class WalletController {
     }
     @Post('debit')
     async initiateDebit(@Req() req: Request, @Body('amount') amount: number, @Body('description') description: string, @Body('referenced_id') referenced_id: string) {
-        if (!amount || amount <= 0) {
+        if (!amount || (amount) <= 0) {
+            console.log('req user is ', req.user);
             throw new BadRequestException('Invalid amount');
         }
 

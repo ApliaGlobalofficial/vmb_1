@@ -20,8 +20,8 @@ export class WalletRequestService {
     const userBalance = await this.walletService.getBalance(userId);
     console.log(`userBalance: ${JSON.stringify(userBalance)}`);
 
-    if (!(dto.requested_amount <= userBalance)) {
-      throw new Error('Amount must be less than or equal to the user balance');
+    if (!(Number(dto.requested_amount) <= Number(userBalance))) {
+      throw new Error('Amount must be less than or equal to the user balance '+ ' current balance ' + userBalance + ' requested amount ' + dto.requested_amount);
     }
     
 

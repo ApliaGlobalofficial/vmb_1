@@ -331,6 +331,7 @@ export class DocumentsService {
     status: string,
     rejectionReason?: string,
     selectedDocumentNames?: string[],
+    userRole?: string,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -349,12 +350,46 @@ export class DocumentsService {
 
       // 3) Handle rejection
       if (status === 'Rejected') {
+
+        console.log('🔍 Rejection status detected, checking reason:', status);
+
         if (!rejectionReason?.trim()) {
           throw new BadRequestException('Rejection reason is required for Rejected status.');
         }
         document.rejection_reason = rejectionReason;
         if (selectedDocumentNames) {
           document.selected_document_names = selectedDocumentNames;
+        }
+
+        if (status === 'Rejected' && userRole === 'Admin') {
+          const priceInfo = await this.pricesService.findByCatIdAndSubCatId(
+            document.category_id,
+            document.subcategory_id,
+          );
+          if (!priceInfo) {
+            throw new BadRequestException(' amount not found.');
+          }
+          const amount = Number(priceInfo.amount);
+          if (isNaN(amount) || amount <= 0) {
+            throw new BadRequestException('Invalid  amount.');
+          }
+
+          const ADMIN_USER_ID = 5;
+          //  subtract from admin
+
+          const adminDebited = await this.walletService.subtractWalletBalance(
+            ADMIN_USER_ID,
+            amount,
+          );
+          if (!adminDebited) {
+            throw new InternalServerErrorException('Failed to debit admin wallet.');
+          }
+          // add to customer
+          const customerId = Number(document.user_id);
+          const customerCredited = await this.walletService.addWalletBalance(customerId, amount)
+          if (!customerCredited) {
+            throw new InternalServerErrorException("failed to credit customer wallet");
+          }
         }
       }
 
@@ -381,7 +416,7 @@ export class DocumentsService {
         // subtract from admin
         const adminDebited = await this.walletService.subtractWalletBalance(
           ADMIN_USER_ID,
-          amount,          // ← only two args
+          amount,
         );
         if (!adminDebited) {
           throw new InternalServerErrorException('Failed to debit admin wallet.');
@@ -802,32 +837,32 @@ Aaradhya Cyber`,
   }
 
   private async generateApplicationId(subcategoryName: string): Promise<string> {
-  const prefix = this.getSubcategoryPrefix(subcategoryName);  // e.g. INCOMECERT3Y
-  const prefixLength = prefix.length;
+    const prefix = this.getSubcategoryPrefix(subcategoryName);  // e.g. INCOMECERT3Y
+    const prefixLength = prefix.length;
 
-  // grab the row with the max numeric part
-  const latest = await this.documentRepository
-    .createQueryBuilder('d')
-    .where('d.application_id LIKE :p', { p: `${prefix}%` })
-    .orderBy(
-      // extract the substring after the prefix, cast it to unsigned int
-      `CAST(SUBSTRING(d.application_id, ${prefixLength + 1}) AS UNSIGNED)`,
-      'DESC'
-    )
-    .getOne();
+    // grab the row with the max numeric part
+    const latest = await this.documentRepository
+      .createQueryBuilder('d')
+      .where('d.application_id LIKE :p', { p: `${prefix}%` })
+      .orderBy(
+        // extract the substring after the prefix, cast it to unsigned int
+        `CAST(SUBSTRING(d.application_id, ${prefixLength + 1}) AS UNSIGNED)`,
+        'DESC'
+      )
+      .getOne();
 
-  const lastNum = latest?.application_id
-    .slice(prefixLength)       // just the digits
-    .match(/\d+$/)?.[0]        // safety
-    ? parseInt(latest.application_id.slice(prefixLength), 10)
-    : 0;
+    const lastNum = latest?.application_id
+      .slice(prefixLength)       // just the digits
+      .match(/\d+$/)?.[0]        // safety
+      ? parseInt(latest.application_id.slice(prefixLength), 10)
+      : 0;
 
-  const nextNumber = lastNum + 1;
-  // pad to at least two places (you can bump to 3, 4, whatever you like)
-  const suffix = nextNumber.toString().padStart(2, '0');
+    const nextNumber = lastNum + 1;
+    // pad to at least two places (you can bump to 3, 4, whatever you like)
+    const suffix = nextNumber.toString().padStart(2, '0');
 
-  return `${prefix}${suffix}`;
-}
+    return `${prefix}${suffix}`;
+  }
 
 
   async uploadDocuments(files: Express.Multer.File[], body: any) {

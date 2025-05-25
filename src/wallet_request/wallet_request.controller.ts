@@ -14,6 +14,8 @@ export class WalletRequestController {
   create(@Req() req: Request,@Body() dto: CreateWalletRequestDto) {
     console.log(`userId: in ctroller ${JSON.stringify(req.user) } `, req.user);
     console.log(`dto: in ctroller ${JSON.stringify(req.user) } `, req.user);
+    console.log('req user is ', req.user);
+    
     
     return this.service.create(dto, (req.user as any).userId);
   }
