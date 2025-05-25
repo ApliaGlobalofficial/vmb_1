@@ -39,6 +39,7 @@ import { SmsModule } from './sms/sms.module';
 import { HeaderModule } from './header/header.module';
 import { ContactInfoModule } from './contact-info/contact-info.module';
 import { WalletRequestModule } from './wallet_request/wallet_request.module';
+import { WalletDebitModule } from './wallet_debit/wallet_debit.module';
 
 config();
 
@@ -103,7 +104,8 @@ config();
     NewsModule
 ,
     PrivacyPolicyModule,
-    WalletRequestModule],
+    WalletRequestModule,
+    WalletDebitModule],
   controllers: [AppController],
   providers: [AppService],
 })
