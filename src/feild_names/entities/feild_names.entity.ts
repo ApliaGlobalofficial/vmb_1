@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, CreateDateColumn } f
 import { Category } from 'src/categories/entities/categories.entity';
 import { Subcategory } from 'src/subcategories/entities/subcategories.entity';
 
-@Entity('FeildName') // Table name
+@Entity('feildname') // Table name
 export class FeildName {
     @PrimaryGeneratedColumn()
     id: number;

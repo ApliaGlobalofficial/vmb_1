@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Category } from 'src/categories/entities/categories.entity';
 import { Subcategory } from 'src/subcategories/entities/subcategories.entity';
-@Entity('RequiredDocuments')
+@Entity('requireddocuments')
 export class RequiredDocument {
     @PrimaryGeneratedColumn()
     id: number;
