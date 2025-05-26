@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('documentTypes')
+@Entity('documenttypes')
 export class DocumentType {
     @PrimaryGeneratedColumn()
     doc_type_id: number;
