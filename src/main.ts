@@ -7,7 +7,7 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS for your front-end origin(s)
   app.enableCors({
-    origin: '*',
+    origin: ['http://3.6.61.72'],
     // credentials: true,
   });
 
