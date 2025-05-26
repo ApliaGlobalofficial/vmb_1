@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } f
 import { Subcategory } from '../../subcategories/entities/subcategories.entity';
 import { RequiredDocument } from '../../required-documents/required-document.entity';
 
-@Entity('Categories')
+@Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn()
   category_id: number;
