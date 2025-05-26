@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 
-@Controller('statistics')
+@Controller('api/statistics')
 export class StatisticsController {
     constructor(private readonly statisticsService: StatisticsService) { }
 
