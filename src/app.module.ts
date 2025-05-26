@@ -40,22 +40,27 @@ import { HeaderModule } from './header/header.module';
 import { ContactInfoModule } from './contact-info/contact-info.module';
 import { WalletRequestModule } from './wallet_request/wallet_request.module';
 import { WalletDebitModule } from './wallet_debit/wallet_debit.module';
+import * as dotenvv from 'dotenv';
 
+dotenvv.config();
 config();
-
+console.log('Environment Variables Loaded:', {
+  DB_HOST: process.env.DB_HOST,})
+ 
 @Module({
   imports: [
 
     ConfigModule.forRoot({
       isGlobal: true, // Makes the config available across the entire application
+      envFilePath: ['.env', '.env.local'],
     }),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: 'Dabhadi@123',
-      database: 'vmdb',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: false,
 
