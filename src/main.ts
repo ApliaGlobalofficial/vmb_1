@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-//app.setGlobalPrefix('api');
+app.setGlobalPrefix('api');
   // Enable CORS for your front-end origin(s)
   app.enableCors({
     origin: ['http://3.6.61.72:5173', "https://mazedakhale.in", "https://www.mazedakhale.in",'http://localhost:5173',"http://mazedakhale.in", "http://www.mazedakhale.in"],
