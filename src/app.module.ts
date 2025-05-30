@@ -3,11 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { ConfigService } from '@nestjs/config';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HttpModule } from '@nestjs/axios';           // ← add this
-
 // Load environment variables early
 import { config } from 'dotenv';
 import { CategoriesModule } from './categories/categories.module';
