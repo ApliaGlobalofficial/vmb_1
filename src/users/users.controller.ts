@@ -58,27 +58,27 @@ export class UsersController {
     return this.usersService.getRegisteredUsers();
   }
   @Post('register')
-@UseInterceptors(
-  FileFieldsInterceptor([
-    { name: 'files', maxCount: 5 },
-    { name: 'profilePhoto', maxCount: 1 }, // ✅ profile photo upload
-  ]),
-)
-async register(
-  @Body() body: Partial<User & { district: string; taluka: string }>,
-  @UploadedFiles() files: {
-    files?: Express.Multer.File[];
-    profilePhoto?: Express.Multer.File[]; // ✅ new field
-  },
-  @Body('documentTypes') documentTypes: string[],
-): Promise<User> {
-  return this.usersService.register(
-    body,
-    files?.files || [],
-    documentTypes,
-    files?.profilePhoto?.[0], // ✅ pass single profile photo
-  );
-}
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'files', maxCount: 5 },
+      { name: 'profilePhoto', maxCount: 1 }, // ✅ profile photo upload
+    ]),
+  )
+  async register(
+    @Body() body: Partial<User & { district: string; taluka: string }>,
+    @UploadedFiles() files: {
+      files?: Express.Multer.File[];
+      profilePhoto?: Express.Multer.File[]; // ✅ new field
+    },
+    @Body('documentTypes') documentTypes: string[],
+  ): Promise<User> {
+    return this.usersService.register(
+      body,
+      files?.files || [],
+      documentTypes,
+      files?.profilePhoto?.[0], // ✅ pass single profile photo
+    );
+  }
 
   // ✅ Update password for a specific user
   @Patch('password/:id')
@@ -184,22 +184,30 @@ async register(
    * body: { status: "Approved" | "Rejected" }
    * – called by the Admin to resolve the request
    */
+  // @Patch('request-edit/:id')
+  // async resolveEdit(
+  //   @Param('id', ParseIntPipe) userId: number,
+  //   @Body('status', new ParseEnumPipe(EditRequestStatus))
+  //   status: EditRequestStatus
+  // ): Promise<string> {
+  //   if (
+  //     status !== EditRequestStatus.APPROVED &&
+  //     status !== EditRequestStatus.REJECTED
+  //   ) {
+  //     throw new BadRequestException('Status must be Approved or Rejected');
+  //   }
+  //   return this.usersService.resolveProfileEditRequest(userId, status);
+  // }
+
   @Patch('request-edit/:id')
   async resolveEdit(
     @Param('id', ParseIntPipe) userId: number,
     @Body('status', new ParseEnumPipe(EditRequestStatus))
     status: EditRequestStatus
   ): Promise<string> {
-    if (
-      status !== EditRequestStatus.APPROVED &&
-      status !== EditRequestStatus.REJECTED
-    ) {
-      throw new BadRequestException('Status must be Approved or Rejected');
-    }
     return this.usersService.resolveProfileEditRequest(userId, status);
   }
-
-
+  
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string): Promise<void> {
     if (!email) throw new BadRequestException('Email is required');

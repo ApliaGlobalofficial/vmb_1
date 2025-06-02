@@ -434,19 +434,48 @@ Aaradhya Cyber`,
    *    - Sets edit_request_status = Approved or Rejected
    *    - Emails the User the result
    */
+  // async resolveProfileEditRequest(
+  //   userId: number,
+  //   status: EditRequestStatus.APPROVED | EditRequestStatus.REJECTED
+  // ): Promise<string> {
+  //   const user = await this.userRepository.findOne({ where: { user_id: userId } });
+  //   if (!user) throw new NotFoundException('User not found');
+
+  //   user.edit_request_status = status;
+  //   await this.userRepository.save(user);
+
+  //   await this.sendEditRequestResultEmail(user, status);
+  //   return `Edit request has been ${status.toLowerCase()}.`;
+  // }
+
   async resolveProfileEditRequest(
-    userId: number,
-    status: EditRequestStatus.APPROVED | EditRequestStatus.REJECTED
-  ): Promise<string> {
-    const user = await this.userRepository.findOne({ where: { user_id: userId } });
-    if (!user) throw new NotFoundException('User not found');
-
-    user.edit_request_status = status;
-    await this.userRepository.save(user);
-
-    await this.sendEditRequestResultEmail(user, status);
-    return `Edit request has been ${status.toLowerCase()}.`;
+  userId: number,
+  status: EditRequestStatus
+): Promise<string> {
+  // Validate status within the service
+  if (
+    status !== EditRequestStatus.APPROVED &&
+    status !== EditRequestStatus.REJECTED
+  ) {
+    throw new BadRequestException('Status must be Approved or Rejected');
   }
+
+  const user = await this.userRepository.findOne({ where: { user_id: userId } });
+  if (!user) throw new NotFoundException('User not found');
+
+  user.edit_request_status = status;
+  await this.userRepository.save(user);
+
+  // Handle the email error by wrapping in try-catch
+  try {
+    await this.sendEditRequestResultEmail(user, status);
+  } catch (emailError) {
+    console.error('Email sending failed:', emailError);
+    // Continue execution even if email fails
+  }
+
+  return `Edit request has been ${status.toLowerCase()}.`;
+}
 
   /** Email the admin when a user requests an edit */
   private async sendEditRequestNotification(admin: User, user: User) {
