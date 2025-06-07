@@ -25,6 +25,13 @@ export class WalletRequestController {
     return this.service.findAll();
   }
 
+  // wallet_request.controller.ts
+@Get('my')
+getMyRequests(@Req() req: Request) {
+  const userId = (req.user as any).userId;
+  return this.service.findByUserId(userId);
+}
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(+id);

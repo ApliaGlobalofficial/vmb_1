@@ -39,4 +39,12 @@ export class CreateWalletRequestDto {
     message: `status must be one of: ${Object.values(WalletRequestStatus).join(', ')}`,
   })
   status?: WalletRequestStatus;
+  @IsOptional()
+@IsString()
+upi_id?: string;
+
+@IsOptional()
+@IsString() // Assuming it’s a URL or base64 string
+qr_code?: string;
+
 }

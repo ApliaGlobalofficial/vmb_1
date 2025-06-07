@@ -29,4 +29,10 @@ export class WalletRequest {
         default: 'Pending',
     })
     status: string;
+    @Column({ length: 100, nullable: true })
+upi_id: string;
+
+@Column({ type: 'text', nullable: true }) // Store image URL or base64 string
+qr_code: string;
+
 }

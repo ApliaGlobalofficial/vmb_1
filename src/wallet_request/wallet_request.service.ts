@@ -51,6 +51,10 @@ export class WalletRequestService {
     Object.assign(wr, dto);
     return this.repo.save(wr);
   }
+// wallet_request.service.ts
+async findByUserId(userId: number) {
+  return this.repo.find({ where: { user_id: userId } });
+}
 
   async remove(id: number) {
     const wr = await this.findOne(id);
