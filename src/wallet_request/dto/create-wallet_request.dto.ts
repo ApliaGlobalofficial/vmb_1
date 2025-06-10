@@ -1,13 +1,13 @@
 import { IsInt, IsOptional, IsString, IsDateString, IsDecimal, IsEnum } from 'class-validator';
 
 export enum WalletRequestStatus {
-  Pending   = 'Pending',
-  Approved  = 'Approved',
-  Rejected  = 'Rejected',
-  Uploaded  = 'Uploaded',
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Uploaded = 'Uploaded',
   Completed = 'Completed',
-  Sent      = 'Sent',
-  Received  = 'Received',
+  Sent = 'Sent',
+  Received = 'Received',
 }
 
 export class CreateWalletRequestDto {
@@ -40,11 +40,11 @@ export class CreateWalletRequestDto {
   })
   status?: WalletRequestStatus;
   @IsOptional()
-@IsString()
-upi_id?: string;
+  @IsString()
+  upi_id?: string;
 
-@IsOptional()
-@IsString() // Assuming it’s a URL or base64 string
-qr_code?: string;
+  @IsOptional()
+  @IsString() // Assuming it’s a URL or base64 string
+  qr_code?: string;
 
 }

@@ -30,9 +30,11 @@ export class WalletRequest {
     })
     status: string;
     @Column({ length: 100, nullable: true })
-upi_id: string;
+    upi_id: string;
 
-@Column({ type: 'text', nullable: true }) // Store image URL or base64 string
-qr_code: string;
+    @Column({ type: 'text', nullable: true }) // Store image URL or base64 string
+    qr_code: string;
 
+    @Column({ type: 'text', nullable: true })
+    payment_screenshot: string;
 }

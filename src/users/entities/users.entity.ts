@@ -100,5 +100,8 @@ export class User {
 
   @OneToMany(() => Feedback, (feedback) => feedback.user)
   feedbacks?: Feedback[];
+
+  @Column({ type: 'json', nullable: true })
+edit_request_fields?: string[];
 }
 

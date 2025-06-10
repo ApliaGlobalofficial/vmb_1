@@ -60,4 +60,10 @@ async findByUserId(userId: number) {
     const wr = await this.findOne(id);
     return this.repo.remove(wr);
   }
+
+  async saveScreenshot(id: number, filePath: string) {
+  const wr = await this.findOne(id);
+  wr.payment_screenshot = filePath;
+  return this.repo.save(wr);
+}
 }
