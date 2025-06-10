@@ -60,7 +60,7 @@ console.log('Environment Variables Loaded:', {
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
 
 
     }),
