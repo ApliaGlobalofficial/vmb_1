@@ -19,7 +19,7 @@ export class WalletDebitService {
     // Load and validate env variables
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    const razorpayAccountNumber = process.env.RAZORPAY_ACCOUNT_NUMBE;
+    const razorpayAccountNumber = process.env.RAZORPAY_ACCOUNT_NUMBER;
 
     if (!keyId || !keySecret) {
       throw new InternalServerErrorException(
